@@ -8,3 +8,5 @@ datanucleus.log
 target/
 classes/
 appengine-generated/
+*.swp
+*.swo
