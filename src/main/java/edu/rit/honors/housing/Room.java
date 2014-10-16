@@ -82,5 +82,33 @@ public class Room {
     public void setOccupants(Integer occupants) {
         this.occupants = occupants;
     }
+    
+    /**
+     * Override Object.equals so that any two rooms with the same room number
+     * are considered to be equal.  Use Room.identical if you want to compare
+     * other properties of two Room objects.
+     * 
+     * @param other The Object with which to compare.
+     * @return true if the other Object is a Room with the same room number
+     */
+    @Override
+    public boolean equals(Object other){
+    	return other instanceof Room && ((Room)other).number == this.number;
+    }
+    
+    /**
+     * Deeper comparison than Room.equals
+     * 
+     * @param other The Object with which to compare
+     * @return true if the other Object is a Room with the same room number, x and y coordinates, and capacity
+     */
+    public boolean identical(Object other){
+    	if(this.equals(other)){
+    		Room r = (Room)other;
+    		return this.x == r.x && this.y == r.y && this.capacity == r.capacity;
+    	}else{
+    		return false;
+    	}
+    }
 
 }
