@@ -5,12 +5,15 @@ import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.ApiNamespace;
 import com.google.api.server.spi.config.Nullable;
 import com.google.api.server.spi.response.ConflictException;
+import com.google.api.server.spi.response.ForbiddenException;
 import com.google.api.server.spi.response.NotFoundException;
+import com.google.api.server.spi.response.ServiceUnavailableException;
 import com.google.api.server.spi.response.UnauthorizedException;
 import com.google.appengine.api.users.User;
 import com.google.devrel.samples.ttt.PMF;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -34,6 +37,16 @@ import javax.jdo.Query;
 // Suppress warnings b/c all queries cause them >_-
 @SuppressWarnings("unchecked")
 public class Housing {
+	
+	// Internal constants
+	private static final String STUDENT_PERMISSION = "Student list";
+	private static final String EDIT_PERMISSION = "Editor list";
+	private static final String ADMIN_PERMISSION = "Admin list";
+
+	// Provide default administrators when none are set.
+	// This array must be alphabetically sorted to function properly
+	private static final String[] DEFAULT_ADMINS = { "gjd6793@g.rit.edu", "rdp2575@g.rit.edu" };
+
 
     /**
      * Get a list of the available rooms, organized into floors.
@@ -67,7 +80,7 @@ public class Housing {
      * @throws NotFoundException if no reservation is found.
      */
     public Reservation current(User user) throws UnauthorizedException, NotFoundException {
-    	this.authorize(user);
+    	this.authorize(user, STUDENT_PERMISSION);
         PersistenceManager pm = PMF.get().getPersistenceManager();
 
         Query q = pm.newQuery(Reservation.class);
@@ -97,7 +110,7 @@ public class Housing {
      */
     @ApiMethod(httpMethod = "PUT")
     public FloorList reserve(User user, @Named("number") Integer room) throws NotFoundException, UnauthorizedException, ConflictException {
-    	this.authorize(user);
+    	this.authorize(user, STUDENT_PERMISSION);
         
         // Get complete list of rooms
         FloorList floors = this.rooms();
@@ -152,10 +165,29 @@ public class Housing {
      * @param room The room number
      * @return The Room object
      * @throws NotFoundException If the Room cannot be found in the datastore
+     * @throws ServiceUnavailableException if an internal error occurs
      */
     @ApiMethod
-    public Room getRoom(User user, @Named("number") Integer room) throws NotFoundException{
+    public Room getRoom(User user, @Named("number") Integer room) 
+    		throws NotFoundException, ServiceUnavailableException{
+    	//TODO: authenticate user
     	// make query.
+    	PersistenceManager pmf = PMF.get().getPersistenceManager();
+    	
+    	Query q = pmf.newQuery(Room.class);
+    	q.setFilter("number = roomNumber");
+    	q.declareParameters("roomNumber");
+    	
+    	try{
+	    	Room r = (Room) q.execute(room);
+	    	if( r != null){
+	    		return r;
+	    	}
+    	}catch(ClassCastException cce){
+    		throw new ServiceUnavailableException(cce);
+    	}finally{
+    		q.closeAll();
+    	}
     	// throw 404 if no room available
     	throw new NotFoundException("not implemented");
     }
@@ -169,13 +201,29 @@ public class Housing {
      * @param y The y position of the room (in pixels)
      * @param cap The room capacity
      * @return The Room created
+     * @throws ServiceUnavailableException if an internal error occurs
+     * @throws ForbiddenException if the room already exists
+     * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(httpMethod = "POST")
     public Room createRoom(User user, @Named("number") Integer num, 
-    		@Named("x") Integer x, @Named("y") Integer y, @Named("capacity") Integer cap){
+    		@Named("x") Integer x, @Named("y") Integer y, @Named("capacity") Integer cap)
+    				throws ServiceUnavailableException, ForbiddenException, UnauthorizedException{
+    	this.authorize(user, EDIT_PERMISSION);
     	// search for existing room
-    	
-    	throw new UnsupportedOperationException("not implemented");
+    	try{
+    		// this should throw a NotFoundException
+    		this.getRoom(user, num);
+    		throw new ForbiddenException("Room already exists");
+    	}catch(NotFoundException nfe){
+    		Room r = new Room();
+    		r.setCapacity(cap);
+    		r.setNumber(num);
+    		r.setX(x);
+    		r.setY(y);
+    		PersistenceManager pm = PMF.get().getPersistenceManager();
+    		return pm.makePersistent(r);
+    	}
     }
     
     /**
@@ -188,12 +236,33 @@ public class Housing {
      * @param y The y position of the room (in pixels)
      * @param cap The room capacity
      * @return The updated Room
+     * @throws ServiceUnavailableException if an internal error occurs
+     * @throws ConflictException if the room does not exist 
+     * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(httpMethod = "PUT")
-    public Room updateRoom(User user, @Named("number") Integer number, @Nullable @Named("x") Integer x, @Nullable @Named("y") Integer y, @Nullable @Named("capacity") Integer cap){
-    	// get other params from fields
-    	throw new UnsupportedOperationException("not implemented");
-    	
+    public Room updateRoom(User user, @Named("number") Integer number, 
+    		@Nullable @Named("x") Integer x, @Nullable @Named("y") Integer y, 
+    		@Nullable @Named("capacity") Integer cap) 
+    				throws ServiceUnavailableException, ConflictException, UnauthorizedException{
+    	this.authorize(user, EDIT_PERMISSION);
+    	try{
+    		PersistenceManager pm = PMF.get().getPersistenceManager();
+    		// this should not throw a NotFoundException
+    		Room r = this.getRoom(user, number);
+    		if( null != x ){
+    			r.setX(x);
+    		}
+    		if( null != y ){
+    			r.setY(y);
+    		}
+    		if( null != cap){
+    			r.setCapacity(cap);
+    		}
+    		return pm.makePersistent(r);
+    	}catch(NotFoundException nfe){
+    		throw new ConflictException("Room does not exist");
+    	}
     }
     
     /**
@@ -203,16 +272,141 @@ public class Housing {
      * @param user
      * @param number
      * @return
+     * @throws ServiceUnavailableException if an internal error occurs
+     * @throws NotFoundException if the room does not exist
+     * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(httpMethod = "DELETE")
-    public Room deleteRoom(User user, @Named("number") Integer number){
-    	// get other params from fields
-    	throw new UnsupportedOperationException("not implemented");
+    public Room deleteRoom(User user, @Named("number") Integer number) 
+    		throws NotFoundException, ServiceUnavailableException, UnauthorizedException{
+    	this.authorize(user, ADMIN_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	Room r = this.getRoom(user, number);
+    	pm.makeTransient(r);
+    	return r;
+    }
+    
+    /**
+     * Gets the current list of available rooms
+     * 
+     * @param user the currently logged in user, filled in by Endpoints SPI
+     * @return a list of room numbers as Strings
+     * @throws NotFoundException if there is no list stored
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "GET")
+    public StringList getRoomList(User user) throws NotFoundException, UnauthorizedException{
+    	this.authorize(user, EDIT_PERMISSION);
+    	return this.getList("RoomList");
     }
 
-    //TODO: API additions
-    // - add room list
-    // - add student list
+    /**
+     * Saves a new List of Strings containing the room numbers.  A list of Integers
+     * might make more sense, but this way is easier internally.
+     * 
+     * @param user the currently logged-in User, filled in by the Endpoints SPI
+     * @param numbers the List of Strings of room numbers
+     * @return the saved list
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "PUT")
+    public StringList updateRoomList(User user, @Named("rooms") List<String> numbers) throws UnauthorizedException{
+    	this.authorize(user, ADMIN_PERMISSION);
+    	return this.updateList(numbers, "RoomList");
+    }
+    
+    /**
+     * Gets the current list of authenticated student emails
+     * 
+     * @param user the currently logged in user, filled in by Endpoints SPI
+     * @return a List of emails as Strings
+     * @throws NotFoundException if there is no list stored
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "GET")
+    public StringList getStudentList(User user) 
+    		throws NotFoundException, UnauthorizedException{
+    	this.authorize(user, EDIT_PERMISSION);
+    	return this.getList(STUDENT_PERMISSION);
+    }
+
+    /**
+     * Saves a new List of Strings containing the authenticated student emails.
+     * 
+     * @param user the currently logged-in User, filled in by the Endpoints SPI
+     * @param emails the List of emails
+     * @return the saved list
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "PUT")
+    public StringList updateStudentList(User user, @Named("emails") List<String> emails) 
+    		throws UnauthorizedException{
+    	this.authorize(user, ADMIN_PERMISSION);
+    	return this.updateList(emails, STUDENT_PERMISSION);
+    }
+    
+    /**
+     * Gets the current list of authenticated editor emails
+     * 
+     * @param user the currently logged in user, filled in by Endpoints SPI
+     * @return a list of room numbers as Strings
+     * @throws NotFoundException if there is no list stored
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "GET")
+    public StringList getEditorList(User user) throws NotFoundException, UnauthorizedException{
+    	this.authorize(user, ADMIN_PERMISSION);
+    	return this.getList(EDIT_PERMISSION);
+    }
+
+    /**
+     * Saves a new List of Strings containing the authenticated editor emails.
+     * 
+     * @param user the currently logged-in User, filled in by the Endpoints SPI
+     * @param emails the List of emails
+     * @return the saved list
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "PUT")
+    public StringList updateEditorList(User user, @Named("emails") List<String> emails) 
+    		throws UnauthorizedException{
+    	this.authorize(user, ADMIN_PERMISSION);
+    	return this.updateList(emails, EDIT_PERMISSION);
+    }
+    
+    /**
+     * Gets the current list of authenticated admin emails
+     * 
+     * @param user the currently logged in user, filled in by Endpoints SPI
+     * @return a list of room numbers as Strings
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "GET")
+    public StringList getAdminList(User user) throws UnauthorizedException{
+    	this.authorize(user, ADMIN_PERMISSION);
+    	try{
+    		return this.getList(ADMIN_PERMISSION);
+    	}catch(NotFoundException nfe){
+    		// ensure there are always some admins
+    		List<String> defaults = Arrays.asList(Housing.DEFAULT_ADMINS);
+    		return new StringList(defaults);
+    	}
+    }
+
+    /**
+     * Saves a new List of Strings containing the authenticated admin emails.
+     * 
+     * @param user the currently logged-in User, filled in by the Endpoints SPI
+     * @param emails the List of emails
+     * @return the saved list
+     * @throws UnauthorizedException if user is not allowed to perform this action
+     */
+    @ApiMethod(httpMethod = "PUT")
+    public StringList updateAdminList(User user, @Named("emails") List<String> emails) 
+    		throws UnauthorizedException{
+    	this.authorize(user, ADMIN_PERMISSION);
+    	return this.updateList(emails, ADMIN_PERMISSION);
+    }
 
 
     // -------------------------------------------------------- //
@@ -266,15 +460,51 @@ public class Housing {
         }
     }
     
-    private void authorize(User user) throws UnauthorizedException {
-    	if(user == null || !this.authorizedUser(user)){
-    		throw new UnauthorizedException("You must be a current Honors Student");
+    // gets a StringList from the datastore
+    private StringList getList(String listName) throws NotFoundException{
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	
+    	Query q = pm.newQuery(StringList.class);
+    	q.setFilter("key == listName");
+    	q.declareParameters("listName");
+    	try {
+    		return (StringList) q.execute(listName);
+    	}catch(ClassCastException cce){
+    		throw new NotFoundException(cce);
     	}
-	}
+    }
 
-    private boolean authorizedUser(User user) {
-		// TODO Auto-generated method stub
-		return true;
+    // stores a StringList in the datastore
+    private StringList updateList(List<String> numbers, String listName){
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	try {
+    		StringList rooms = this.getList(listName);
+    		rooms.setStrings(numbers);
+    		return pm.makePersistent(rooms);
+    	}catch(NotFoundException cce){
+    		//there is no list with that key
+    		StringList rooms = new StringList(numbers);
+    		rooms.setKey(listName);
+    		return pm.makePersistent(rooms);
+    	}
+    }
+    
+    private void authorize(User user, String permission) throws UnauthorizedException {
+		boolean authorized = false;
+    	if(user != null && user.getEmail() != null){
+    		try {
+    			StringList students = this.getList(permission);
+    			authorized = students.getStrings().contains(user.getEmail());
+				if( !authorized && permission == ADMIN_PERMISSION ){
+					authorized = 0 <= Arrays.binarySearch(DEFAULT_ADMINS, user.getEmail());
+				}
+    		} catch (NotFoundException e) {
+    			//TODO: log exception
+    		}
+    	}
+		if( !authorized ){
+			throw new UnauthorizedException("You must be on the "+permission+" to perform this action");
+		}
 	}
 
 }
