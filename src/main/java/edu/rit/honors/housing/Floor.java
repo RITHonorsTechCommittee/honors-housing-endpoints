@@ -1,11 +1,13 @@
 package edu.rit.honors.housing;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.PrimaryKey;
+
 import com.google.appengine.api.datastore.Key;
 
 @PersistenceCapable
@@ -20,24 +22,24 @@ public class Floor {
     }
 
     @Persistent
-    private Integer number;
+    private String number;
 
     @Persistent
-    private ArrayList<Room> rooms = new ArrayList<Room>();
+    private List<Room> rooms = new ArrayList<Room>();
 
-    public Integer getNumber() {
+    public String getNumber() {
         return number;
     }
 
-    public void setNumber(Integer number) {
+    public void setNumber(String number) {
         this.number = number;
     }
 
-    public ArrayList<Room> getRooms() {
+    public List<Room> getRooms() {
         return rooms;
     }
 
-    public void setRooms(ArrayList<Room> rooms) {
+    public void setRooms(List<Room> rooms) {
         this.rooms = rooms;
     }
 

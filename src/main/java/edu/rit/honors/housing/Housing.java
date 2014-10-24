@@ -16,10 +16,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.inject.Named;
+import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
+
+import org.datanucleus.store.query.AbstractQueryResult;
 
 /**
  * Honors Housing Selection API
@@ -174,24 +178,31 @@ public class Housing {
     		throws NotFoundException, ServiceUnavailableException{
     	//TODO: authenticate user
     	// make query.
-    	PersistenceManager pmf = PMF.get().getPersistenceManager();
-    	
-    	Query q = pmf.newQuery(Room.class);
-    	q.setFilter("number = roomNumber");
-    	q.declareParameters("roomNumber");
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	try{
+    		return getRoom(room,pm);
+    	}finally{
+    		pm.close();
+    	}
+    }
+    
+    private Room getRoom(Integer room, PersistenceManager pm) 
+    		throws NotFoundException, ServiceUnavailableException{
+    	Query q = pm.newQuery(Room.class);
+    	q.setFilter("number == roomNumber");
+    	q.declareParameters("Integer roomNumber");
     	
     	try{
-	    	Room r = (Room) q.execute(room);
-	    	if( r != null){
-	    		return r;
-	    	}
-    	}catch(ClassCastException cce){
-    		throw new ServiceUnavailableException(cce);
+    		AbstractQueryResult res = (AbstractQueryResult) q.execute(room);
+    		if( res.isEmpty() ){
+    	    	// throw 404 if no room available
+    			throw new NotFoundException("Could not find room "+room.toString());
+    		}else{
+    			return (Room) res.get(0);
+    		}
     	}finally{
     		q.closeAll();
     	}
-    	// throw 404 if no room available
-    	throw new NotFoundException("not implemented");
     }
     
     /**
@@ -208,23 +219,42 @@ public class Housing {
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(httpMethod = "POST")
-    public Room createRoom(User user, @Named("number") Integer num, 
+    public Room createRoom(User user, @Named("number") Integer num, @Named("floor") String floor,
     		@Named("x") Integer x, @Named("y") Integer y, @Named("capacity") Integer cap)
     				throws ServiceUnavailableException, ForbiddenException, UnauthorizedException{
     	this.authorize(user, EDIT_PERMISSION);
+		PersistenceManager pm = PMF.get().getPersistenceManager();
     	// search for existing room
     	try{
     		// this should throw a NotFoundException
-    		this.getRoom(user, num);
+    		this.getRoom(num,pm);
     		throw new ForbiddenException("Room already exists");
     	}catch(NotFoundException nfe){
+    		// create new room
     		Room r = new Room();
     		r.setCapacity(cap);
     		r.setNumber(num);
     		r.setX(x);
     		r.setY(y);
-    		PersistenceManager pm = PMF.get().getPersistenceManager();
-    		return pm.makePersistent(r);
+    		// find floor to which the room will be added
+    		Query q = pm.newQuery(Floor.class);
+    		q.setFilter("number == floorNumber");
+    		q.declareParameters("String floorNumber");
+    		try{
+    			AbstractQueryResult res = (AbstractQueryResult) q.execute(floor);
+    			if(res.isEmpty()){
+        			Floor f = new Floor();
+        			f.setNumber(floor);
+        			f.getRooms().add(r);
+        			pm.makePersistent(f);
+    			} else {
+	    			Floor f = (Floor) res.get(0);
+	    			f.getRooms().add(r);
+    			}
+    		}finally{
+    			pm.close();
+    		}
+    		return r;
     	}
     }
     
@@ -251,7 +281,7 @@ public class Housing {
     	try{
     		PersistenceManager pm = PMF.get().getPersistenceManager();
     		// this should not throw a NotFoundException
-    		Room r = this.getRoom(user, number);
+    		Room r = this.getRoom(number,pm);
     		if( null != x ){
     			r.setX(x);
     		}
@@ -261,7 +291,11 @@ public class Housing {
     		if( null != cap){
     			r.setCapacity(cap);
     		}
-    		return pm.makePersistent(r);
+    		try {
+    			return pm.makePersistent(r);
+    		} finally {
+    			pm.close();
+    		}
     	}catch(NotFoundException nfe){
     		throw new ConflictException("Room does not exist");
     	}
@@ -283,8 +317,12 @@ public class Housing {
     		throws NotFoundException, ServiceUnavailableException, UnauthorizedException{
     	this.authorize(user, ADMIN_PERMISSION);
     	PersistenceManager pm = PMF.get().getPersistenceManager();
-    	Room r = this.getRoom(user, number);
-    	pm.makeTransient(r);
+    	Room r = this.getRoom(number,pm);
+    	try{
+    		pm.deletePersistent(r);
+    	}finally{
+    		pm.close();
+    	}
     	return r;
     }
     
@@ -465,14 +503,12 @@ public class Housing {
     // gets a StringList from the datastore
     private StringList getList(String listName) throws NotFoundException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
-    	
-    	Query q = pm.newQuery(StringList.class);
-    	q.setFilter("key == listName");
-    	q.declareParameters("listName");
-    	try {
-    		return (StringList) q.execute(listName);
-    	}catch(ClassCastException cce){
-    		throw new NotFoundException(cce);
+    	try{
+    		return pm.getObjectById(StringList.class, listName);
+    	}catch(JDOObjectNotFoundException jdoe){
+    		throw new NotFoundException("List "+listName+" not found");
+    	}finally{
+    		pm.close();
     	}
     }
 
@@ -492,20 +528,23 @@ public class Housing {
     }
     
     private void authorize(User user, String permission) throws UnauthorizedException {
-		boolean authorized = false;
+    	//TODO: true only for local testing!!
+		boolean authorized = true;
+		String email = "";
     	if(user != null && user.getEmail() != null){
+    		email = user.getEmail();
     		try {
     			StringList students = this.getList(permission);
-    			authorized = students.getStrings().contains(user.getEmail());
+    			authorized = students.getStrings().contains(email);
 				if( !authorized && permission == ADMIN_PERMISSION ){
-					authorized = 0 <= Arrays.binarySearch(DEFAULT_ADMINS, user.getEmail());
+					authorized = 0 <= Arrays.binarySearch(DEFAULT_ADMINS, email);
 				}
     		} catch (NotFoundException e) {
     			//TODO: log exception
     		}
     	}
 		if( !authorized ){
-			throw new UnauthorizedException("You must be on the "+permission+" to perform this action");
+			throw new UnauthorizedException("You ("+email+") must be on the "+permission+" to perform this action");
 		}
 	}
 
