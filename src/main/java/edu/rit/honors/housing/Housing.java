@@ -52,6 +52,7 @@ public class Housing {
      * Get a list of the available rooms, organized into floors.
      * @throws NotFoundException if no rooms are found.
      */
+	@ApiMethod(httpMethod = "GET")
     public FloorList rooms() throws NotFoundException {
         PersistenceManager pm = PMF.get().getPersistenceManager();
 
@@ -79,6 +80,7 @@ public class Housing {
      * 		logged in user is not authorized to reserve rooms.
      * @throws NotFoundException if no reservation is found.
      */
+	@ApiMethod(httpMethod = "GET")
     public Reservation current(User user) throws UnauthorizedException, NotFoundException {
     	this.authorize(user, STUDENT_PERMISSION);
         PersistenceManager pm = PMF.get().getPersistenceManager();
@@ -167,7 +169,7 @@ public class Housing {
      * @throws NotFoundException If the Room cannot be found in the datastore
      * @throws ServiceUnavailableException if an internal error occurs
      */
-    @ApiMethod
+    @ApiMethod(httpMethod = "GET")
     public Room getRoom(User user, @Named("number") Integer room) 
     		throws NotFoundException, ServiceUnavailableException{
     	//TODO: authenticate user
@@ -294,7 +296,7 @@ public class Housing {
      * @throws NotFoundException if there is no list stored
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(httpMethod = "GET")
+    @ApiMethod(path="list/room", httpMethod = "GET")
     public StringList getRoomList(User user) throws NotFoundException, UnauthorizedException{
     	this.authorize(user, EDIT_PERMISSION);
     	return this.getList("RoomList");
@@ -309,7 +311,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(httpMethod = "PUT")
+    @ApiMethod(path="list/room", httpMethod = "PUT")
     public StringList updateRoomList(User user, @Named("rooms") List<String> numbers) throws UnauthorizedException{
     	this.authorize(user, ADMIN_PERMISSION);
     	return this.updateList(numbers, "RoomList");
@@ -338,7 +340,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(httpMethod = "PUT")
+    @ApiMethod(path="list/student", httpMethod = "PUT")
     public StringList updateStudentList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
     	this.authorize(user, ADMIN_PERMISSION);
@@ -353,7 +355,7 @@ public class Housing {
      * @throws NotFoundException if there is no list stored
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(httpMethod = "GET")
+    @ApiMethod(path="list/editor", httpMethod = "GET")
     public StringList getEditorList(User user) throws NotFoundException, UnauthorizedException{
     	this.authorize(user, ADMIN_PERMISSION);
     	return this.getList(EDIT_PERMISSION);
@@ -367,7 +369,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(httpMethod = "PUT")
+    @ApiMethod(path="list/editor", httpMethod = "PUT")
     public StringList updateEditorList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
     	this.authorize(user, ADMIN_PERMISSION);
@@ -381,7 +383,7 @@ public class Housing {
      * @return a list of room numbers as Strings
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(httpMethod = "GET")
+    @ApiMethod(path="list/admin", httpMethod = "GET")
     public StringList getAdminList(User user) throws UnauthorizedException{
     	this.authorize(user, ADMIN_PERMISSION);
     	try{
@@ -401,7 +403,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(httpMethod = "PUT")
+    @ApiMethod(path="list/admin", httpMethod = "PUT")
     public StringList updateAdminList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
     	this.authorize(user, ADMIN_PERMISSION);
