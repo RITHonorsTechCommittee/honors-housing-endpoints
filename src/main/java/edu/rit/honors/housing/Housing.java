@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Named;
@@ -32,25 +33,27 @@ import org.datanucleus.store.query.AbstractQueryResult;
  */
 @Api(
     name = "housing",
+    description = "Authenticates and stores data for Honors Housing room reservations",
     version = "v1",
     scopes = {Constants.EMAIL_SCOPE},
     clientIds = {Constants.WEB_CLIENT_ID, Constants.API_EXPLORER_CLIENT_ID},
     namespace = @ApiNamespace( ownerDomain = "honors.rit.edu",
         ownerName = "RIT Honors Program")
 )
-// Suppress warnings b/c all queries cause them >_-
+// Suppress warnings b/c all queries cause them -_-
 @SuppressWarnings("unchecked")
 public class Housing {
 	
-	// Internal constants
+	// String list constants
 	private static final String STUDENT_PERMISSION = "Student list";
 	private static final String EDIT_PERMISSION = "Editor list";
 	private static final String ADMIN_PERMISSION = "Admin list";
+	private static final String ROOM_LIST = "Room list";
+
 
 	// Provide default administrators when none are set.
 	// This array must be alphabetically sorted to function properly
 	private static final String[] DEFAULT_ADMINS = { "gjd6793@g.rit.edu", "rdp2575@g.rit.edu" };
-
 
     /**
      * Get a list of the available rooms, organized into floors.
@@ -62,12 +65,14 @@ public class Housing {
 
         Query q = pm.newQuery(Floor.class);
         q.setOrdering("number asc");
-        q.setRange(0,5);
 
         try {
             List<Floor> floors = (List<Floor>) q.execute();
             if(!floors.isEmpty()) {
-                return new FloorList(this.addOccupants(floors));
+            	// add occupants both finds the current reservations
+            	// and removes rooms that are not in the list
+            	// Housing.ROOM_LIST
+                return new FloorList(this.addOccupants(floors,pm));
             }
         } finally {
             q.closeAll();
@@ -86,23 +91,37 @@ public class Housing {
      */
 	@ApiMethod(httpMethod = "GET")
     public Reservation current(User user) throws UnauthorizedException, NotFoundException {
-    	this.authorize(user, STUDENT_PERMISSION);
         PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, STUDENT_PERMISSION);
 
-        Query q = pm.newQuery(Reservation.class);
+        Reservation r = this.getReservation(user,pm);
+        if(null == r){
+        	throw new NotFoundException("You have not reserved a room");
+        }else{
+        	return r;
+        }
+    }
+	
+	// modularize the reservation query so it can be used by multiple API functions
+	private Reservation getReservation(User user, PersistenceManager pm) {
+		if(null == user){
+			return null;
+		}
+		Query q = pm.newQuery(Reservation.class);
         q.setFilter("user == currentUser");
         q.declareParameters("User currentUser");
 
         try {
-            Reservation r = (Reservation) q.execute(user);
-            if( r != null ) {
-                return r;
+            AbstractQueryResult res = (AbstractQueryResult) q.execute(user);
+            if(res.size() == 0){
+                return null;
+            }else{
+            	return (Reservation) res.get(0);
             }
         } finally {
             q.closeAll();
         }
-        throw new NotFoundException("You have not reserved a room");
-    }
+	}
 
     /**
      * Reserve a room for the logged in user
@@ -116,14 +135,15 @@ public class Housing {
      */
     @ApiMethod(httpMethod = "PUT")
     public FloorList reserve(User user, @Named("number") Integer room) throws NotFoundException, UnauthorizedException, ConflictException {
-    	this.authorize(user, STUDENT_PERMISSION);
+        PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, STUDENT_PERMISSION);
         
         // Get complete list of rooms
         FloorList floors = this.rooms();
         
         // Check to make sure the user isn't re-reserving the same room
-        Reservation current = this.current(user);
-        if(current.getRoomNumber() == room){
+        Reservation current = this.getReservation(user, pm);
+        if(null != current && current.getRoomNumber() == room){
         	// Nothing to do.
         	return floors;
         }
@@ -139,20 +159,18 @@ public class Housing {
         	throw new ConflictException("Room is full");
         }
         
-
-        PersistenceManager pm = PMF.get().getPersistenceManager();
         try {
-	        // Unreserve the currently reserved room
 	        if( current != null ) {
-	            //TODO: make atomic with creating a new reservation.
-	            pm.makeTransient(current);
+	        	// change the room number of the reservation
+	            current.setRoomNumber(room);
+	        } else {
+		        // Make a new reservation
+		        Reservation newRes = new Reservation(user,room,new Date());
+	            pm.makePersistent(newRes);
 	        }
-	        
-	        // Make a new reservation
-	        Reservation newRes = new Reservation(user,room,new Date());
-            pm.makePersistent(newRes);
+	        r.setOccupants(r.getOccupants()+1);
+	        r.getOccupantNames().add(user.getNickname());
             return floors;
-            
         } finally {
             pm.close();
         }
@@ -172,13 +190,13 @@ public class Housing {
      * @return The Room object
      * @throws NotFoundException If the Room cannot be found in the datastore
      * @throws ServiceUnavailableException if an internal error occurs
+     * @throws UnauthorizedException if the current user is not an editor or admin
      */
     @ApiMethod(httpMethod = "GET")
     public Room getRoom(User user, @Named("number") Integer room) 
-    		throws NotFoundException, ServiceUnavailableException{
-    	//TODO: authenticate user
-    	// make query.
+    		throws NotFoundException, ServiceUnavailableException, UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
     	try{
     		return getRoom(room,pm);
     	}finally{
@@ -213,6 +231,7 @@ public class Housing {
      * @param x The x position of the room (in pixels)
      * @param y The y position of the room (in pixels)
      * @param cap The room capacity
+     * @param shading The SVG path to shade the room (optional)
      * @return The Room created
      * @throws ServiceUnavailableException if an internal error occurs
      * @throws ForbiddenException if the room already exists
@@ -220,10 +239,11 @@ public class Housing {
      */
     @ApiMethod(httpMethod = "POST")
     public Room createRoom(User user, @Named("number") Integer num, @Named("floor") String floor,
-    		@Named("x") Integer x, @Named("y") Integer y, @Named("capacity") Integer cap)
+    		@Named("x") Integer x, @Named("y") Integer y, @Named("capacity") Integer cap, 
+    		@Nullable @Named("shading") String shading)
     				throws ServiceUnavailableException, ForbiddenException, UnauthorizedException{
-    	this.authorize(user, EDIT_PERMISSION);
-		PersistenceManager pm = PMF.get().getPersistenceManager();
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
     	// search for existing room
     	try{
     		// this should throw a NotFoundException
@@ -236,6 +256,9 @@ public class Housing {
     		r.setNumber(num);
     		r.setX(x);
     		r.setY(y);
+    		if(null != shading) {
+    			r.setShading(shading);
+    		}
     		// find floor to which the room will be added
     		Query q = pm.newQuery(Floor.class);
     		q.setFilter("number == floorNumber");
@@ -275,11 +298,11 @@ public class Housing {
     @ApiMethod(httpMethod = "PUT")
     public Room updateRoom(User user, @Named("number") Integer number, 
     		@Nullable @Named("x") Integer x, @Nullable @Named("y") Integer y, 
-    		@Nullable @Named("capacity") Integer cap) 
+    		@Nullable @Named("capacity") Integer cap, @Nullable @Named("shading") String shading) 
     				throws ServiceUnavailableException, ConflictException, UnauthorizedException{
-    	this.authorize(user, EDIT_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
     	try{
-    		PersistenceManager pm = PMF.get().getPersistenceManager();
     		// this should not throw a NotFoundException
     		Room r = this.getRoom(number,pm);
     		if( null != x ){
@@ -290,6 +313,9 @@ public class Housing {
     		}
     		if( null != cap){
     			r.setCapacity(cap);
+    		}
+    		if(null != shading) {
+    			r.setShading(shading);
     		}
     		try {
     			return pm.makePersistent(r);
@@ -302,8 +328,7 @@ public class Housing {
     }
     
     /**
-     * Remove a Room from the datastore, specifed by the room number. 
-     * Throws a 404 NotFoundException if the Room does not exist.
+     * Remove a Room from the datastore, specifed by the room number.
      * 
      * @param user
      * @param number
@@ -315,8 +340,8 @@ public class Housing {
     @ApiMethod(httpMethod = "DELETE")
     public Room deleteRoom(User user, @Named("number") Integer number) 
     		throws NotFoundException, ServiceUnavailableException, UnauthorizedException{
-    	this.authorize(user, ADMIN_PERMISSION);
     	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, ADMIN_PERMISSION);
     	Room r = this.getRoom(number,pm);
     	try{
     		pm.deletePersistent(r);
@@ -336,8 +361,9 @@ public class Housing {
      */
     @ApiMethod(path="list/room", httpMethod = "GET")
     public StringList getRoomList(User user) throws NotFoundException, UnauthorizedException{
-    	this.authorize(user, EDIT_PERMISSION);
-    	return this.getList("RoomList");
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
+    	return this.getList(Housing.ROOM_LIST, pm);
     }
 
     /**
@@ -351,8 +377,9 @@ public class Housing {
      */
     @ApiMethod(path="list/room", httpMethod = "PUT")
     public StringList updateRoomList(User user, @Named("rooms") List<String> numbers) throws UnauthorizedException{
-    	this.authorize(user, ADMIN_PERMISSION);
-    	return this.updateList(numbers, "RoomList");
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, ADMIN_PERMISSION);
+    	return this.updateList(numbers, Housing.ROOM_LIST, pm);
     }
     
     /**
@@ -366,8 +393,9 @@ public class Housing {
     @ApiMethod(httpMethod = "GET")
     public StringList getStudentList(User user) 
     		throws NotFoundException, UnauthorizedException{
-    	this.authorize(user, EDIT_PERMISSION);
-    	return this.getList(STUDENT_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
+    	return this.getList(STUDENT_PERMISSION, pm);
     }
 
     /**
@@ -381,8 +409,9 @@ public class Housing {
     @ApiMethod(path="list/student", httpMethod = "PUT")
     public StringList updateStudentList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
-    	this.authorize(user, ADMIN_PERMISSION);
-    	return this.updateList(emails, STUDENT_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, ADMIN_PERMISSION);
+    	return this.updateList(emails, STUDENT_PERMISSION, pm);
     }
     
     /**
@@ -395,8 +424,9 @@ public class Housing {
      */
     @ApiMethod(path="list/editor", httpMethod = "GET")
     public StringList getEditorList(User user) throws NotFoundException, UnauthorizedException{
-    	this.authorize(user, ADMIN_PERMISSION);
-    	return this.getList(EDIT_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, ADMIN_PERMISSION);
+    	return this.getList(EDIT_PERMISSION, pm);
     }
 
     /**
@@ -410,8 +440,9 @@ public class Housing {
     @ApiMethod(path="list/editor", httpMethod = "PUT")
     public StringList updateEditorList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
-    	this.authorize(user, ADMIN_PERMISSION);
-    	return this.updateList(emails, EDIT_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, ADMIN_PERMISSION);
+    	return this.updateList(emails, EDIT_PERMISSION, pm);
     }
     
     /**
@@ -423,9 +454,10 @@ public class Housing {
      */
     @ApiMethod(path="list/admin", httpMethod = "GET")
     public StringList getAdminList(User user) throws UnauthorizedException{
-    	this.authorize(user, ADMIN_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, ADMIN_PERMISSION);
     	try{
-    		return this.getList(ADMIN_PERMISSION);
+    		return this.getList(ADMIN_PERMISSION, pm);
     	}catch(NotFoundException nfe){
     		// ensure there are always some admins
     		List<String> defaults = Arrays.asList(Housing.DEFAULT_ADMINS);
@@ -444,8 +476,9 @@ public class Housing {
     @ApiMethod(path="list/admin", httpMethod = "PUT")
     public StringList updateAdminList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
-    	this.authorize(user, ADMIN_PERMISSION);
-    	return this.updateList(emails, ADMIN_PERMISSION);
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, ADMIN_PERMISSION);
+    	return this.updateList(emails, ADMIN_PERMISSION, pm);
     }
 
 
@@ -454,7 +487,7 @@ public class Housing {
     // -------------------------------------------------------- //
 
     // Look up reservations and add occupants to rooms
-    private List<Floor> addOccupants(List<Floor> floors) {
+    private List<Floor> addOccupants(List<Floor> floors, PersistenceManager pm) throws NotFoundException {
         // Create temporary variables so that the parameters are not
         // modified, which could cause hard-to-diagnose serialization
         // problems.
@@ -463,14 +496,22 @@ public class Housing {
         Floor f2;
         Room r2;
 
-        //TODO: only return rooms that are available this year.
+        StringList rooms = this.getList(Housing.ROOM_LIST,pm);
         for( Floor f : floors) {
             tempRooms = new ArrayList<Room>();
             for( Room r : f.getRooms() ){
                 r2 = new Room(r);
-                List<Reservation> res = this.getReservationsForRoom(r2);
-                r2.setOccupants(res.size());
-                tempRooms.add(r2);
+                if(rooms.getStrings().contains(r2.getNumber().toString())){
+	                List<Reservation> res = this.getReservationsForRoom(r2,pm);
+	                List<String> names = new ArrayList<String>();
+	                for(Reservation name : res){
+	                	//TODO: make sure we are authorized to access the full name
+	                	names.add(name.getUser().getNickname());
+	                }
+	                r2.setOccupants(res.size());
+	                r2.setOccupantNames(names);
+	                tempRooms.add(r2);
+                }
             }
             f2 = new Floor();
             f2.setNumber(f.getNumber());
@@ -481,9 +522,8 @@ public class Housing {
         return retVal;
     }
 
-    private List<Reservation> getReservationsForRoom(Room r) {
+    private List<Reservation> getReservationsForRoom(Room r, PersistenceManager pm) {
         // For every room, check to see how many reservations have been made.
-        PersistenceManager pm = PMF.get().getPersistenceManager();
         Query q = pm.newQuery(Reservation.class);
         q.setFilter("roomNumber == room");
         q.declareParameters("Integer room");
@@ -501,8 +541,7 @@ public class Housing {
     }
     
     // gets a StringList from the datastore
-    private StringList getList(String listName) throws NotFoundException{
-    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    private StringList getList(String listName, PersistenceManager pm) throws NotFoundException{
     	try{
     		return pm.getObjectById(StringList.class, listName);
     	}catch(JDOObjectNotFoundException jdoe){
@@ -513,10 +552,9 @@ public class Housing {
     }
 
     // stores a StringList in the datastore
-    private StringList updateList(List<String> numbers, String listName){
-    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    private StringList updateList(List<String> numbers, String listName, PersistenceManager pm){
     	try {
-    		StringList rooms = this.getList(listName);
+    		StringList rooms = this.getList(listName,pm);
     		rooms.setStrings(numbers);
     		return pm.makePersistent(rooms);
     	}catch(NotFoundException cce){
@@ -527,24 +565,29 @@ public class Housing {
     	}
     }
     
-    private void authorize(User user, String permission) throws UnauthorizedException {
-    	//TODO: true only for local testing!!
-		boolean authorized = true;
+    private void authorize(User user, PersistenceManager pm, String... permission) throws UnauthorizedException {
+		boolean authorized = false;
 		String email = "";
     	if(user != null && user.getEmail() != null){
-    		email = user.getEmail();
-    		try {
-    			StringList students = this.getList(permission);
-    			authorized = students.getStrings().contains(email);
-				if( !authorized && permission == ADMIN_PERMISSION ){
-					authorized = 0 <= Arrays.binarySearch(DEFAULT_ADMINS, email);
-				}
-    		} catch (NotFoundException e) {
-    			//TODO: log exception
-    		}
-    	}
+    		for( String list : permission){
+	    		email = user.getEmail();
+	    		try {
+	    			StringList emails = this.getList(list,pm);
+	    			authorized = (emails.getStrings() != null) && emails.getStrings().contains(email);
+					if( !authorized && list == ADMIN_PERMISSION ){
+						authorized = 0 <= Arrays.binarySearch(DEFAULT_ADMINS, email);
+					}
+	    		} catch (NotFoundException e) {
+	    			Logger l = Logger.getLogger(this.getClass().getName());
+	    			l.log(Level.INFO, "Could not authorize "+email+" list "+list+" not found.", e);
+	    		}
+	    	}
+		}
+    	//TODO: remove for production
+    	authorized = true;
 		if( !authorized ){
-			throw new UnauthorizedException("You ("+email+") must be on the "+permission+" to perform this action");
+			String lists = Arrays.deepToString(permission);
+			throw new UnauthorizedException("You ("+email+") must be on one of "+lists+" to perform this action");
 		}
 	}
 

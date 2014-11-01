@@ -1,10 +1,13 @@
 package edu.rit.honors.housing;
 
+import java.util.List;
+
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.NotPersistent;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.PrimaryKey;
+
 import com.google.appengine.api.datastore.Key;
 
 @PersistenceCapable
@@ -29,9 +32,15 @@ public class Room {
 
     @Persistent
     private Integer y;
+    
+    @Persistent
+    private String shading = "";
 
     @NotPersistent
     private Integer occupants = 0;
+    
+    @NotPersistent
+    private List<String> occupantNames = null;
 
     public Room() {}
 
@@ -41,6 +50,7 @@ public class Room {
         this.x = r.x;
         this.y = r.y;
         this.occupants = r.occupants;
+        this.shading = r.shading;
     }
     
     public Integer getNumber() {
@@ -74,6 +84,14 @@ public class Room {
     public void setY(Integer y) {
         this.y = y;
     }
+    
+    public String getShading() {
+    	return shading;
+    }
+    
+    public void setShading(String shading) {
+    	this.shading = shading;
+    }
 
     public Integer getOccupants() {
         return occupants;
@@ -81,6 +99,14 @@ public class Room {
 
     public void setOccupants(Integer occupants) {
         this.occupants = occupants;
+    }
+    
+    public List<String> getOccupantNames() {
+    	return occupantNames;
+    }
+    
+    public void setOccupantNames(List<String> names) {
+    	this.occupantNames = names;
     }
     
     /**
@@ -100,12 +126,12 @@ public class Room {
      * Deeper comparison than Room.equals
      * 
      * @param other The Object with which to compare
-     * @return true if the other Object is a Room with the same room number, x and y coordinates, and capacity
+     * @return true if the other Object is a Room and the values of the persistent fields match.
      */
     public boolean identical(Object other){
     	if(this.equals(other)){
     		Room r = (Room)other;
-    		return this.x == r.x && this.y == r.y && this.capacity == r.capacity;
+    		return this.x == r.x && this.y == r.y && this.capacity == r.capacity && this.shading == r.shading;
     	}else{
     		return false;
     	}
