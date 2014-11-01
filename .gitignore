@@ -8,5 +8,6 @@ datanucleus.log
 target/
 classes/
 appengine-generated/
+bower_components/
 *.swp
 *.swo

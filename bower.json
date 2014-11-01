@@ -1,0 +1,12 @@
+{
+  "name": "webapp",
+  "version": "0.0.0",
+  "homepage": "https://github.com/RITHonorsTechCommittee/honors-housing-endpoints",
+  "authors": [
+    "regdoug <pierce.reginald@gmail.com>"
+  ],
+  "private": true,
+  "dependencies": {
+    "honors-d3-housing": "https://github.com/RITHonorsTechCommittee/honors-d3-housing.git#~0.3.0"
+  }
+}
