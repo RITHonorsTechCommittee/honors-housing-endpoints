@@ -1,6 +1,10 @@
 package edu.rit.honors.housing;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -17,7 +21,7 @@ public class StringList {
 	private String key;
 
     @Persistent
-    private List<String> string;
+    private Set<String> string;
     
     public String getKey(){
     	return key;
@@ -27,16 +31,20 @@ public class StringList {
     	this.key = key;
     }
 
-    public List<String> getStrings(){
+    public Set<String> getStrings(){
         return string;
     }
 
-    public void setStrings(List<String> emails) {
-        this.string = emails;
+    public void setStrings(Collection<String> strings) {
+    	if(strings instanceof SortedSet<?>){
+    		this.string = (Set<String>) strings;
+    	} else {
+    		this.string = new TreeSet<String>(strings);
+    	}
     }
     
     public StringList(){}
     
-    public StringList(List<String> strings){ this.string = strings; }
+    public StringList(Collection<String> strings){ this.setStrings(strings); }
 
 }

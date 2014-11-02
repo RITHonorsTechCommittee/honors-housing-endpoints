@@ -384,11 +384,13 @@ public class Housing {
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(path="list/room", httpMethod = "POST")
-    public StringList updateRoomList(User user, @Named("rooms") List<String> numbers) throws UnauthorizedException{
+    public StringList updateRoomList(User user, @Named("rooms") List<String> numbers,
+    		@Nullable @Named("append") Boolean append) throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
-	    	return this.updateList(numbers, Housing.ROOM_LIST, pm);
+	    	append = (append == null)?Boolean.FALSE:append;
+	    	return this.updateList(Housing.ROOM_LIST, pm, numbers, append.booleanValue());
     	} finally {
     		pm.close();
     	}
@@ -423,12 +425,13 @@ public class Housing {
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(path="list/student", httpMethod = "POST")
-    public StringList updateStudentList(User user, @Named("emails") List<String> emails) 
-    		throws UnauthorizedException{
+    public StringList updateStudentList(User user, @Named("emails") List<String> emails,
+    		@Nullable @Named("append") Boolean append) throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
-	    	return this.updateList(emails, STUDENT_PERMISSION, pm);
+	    	append = (append == null)?Boolean.FALSE:append;
+	    	return this.updateList(STUDENT_PERMISSION, pm, emails, append.booleanValue());
     	} finally {
     		pm.close();
     	}
@@ -462,12 +465,13 @@ public class Housing {
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(path="list/editor", httpMethod = "POST")
-    public StringList updateEditorList(User user, @Named("emails") List<String> emails) 
-    		throws UnauthorizedException{
+    public StringList updateEditorList(User user, @Named("emails") List<String> emails,
+    		@Nullable @Named("append") Boolean append) throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
-	    	return this.updateList(emails, EDIT_PERMISSION, pm);
+	    	append = (append == null)?Boolean.FALSE:append;
+	    	return this.updateList(EDIT_PERMISSION, pm, emails, false);
     	} finally {
     		pm.close();
     	}
@@ -504,12 +508,13 @@ public class Housing {
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
     @ApiMethod(path="list/admin", httpMethod = "POST")
-    public StringList updateAdminList(User user, @Named("emails") List<String> emails) 
-    		throws UnauthorizedException{
+    public StringList updateAdminList(User user, @Named("emails") List<String> emails,
+    		@Nullable @Named("append") Boolean append) throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
-	    	return this.updateList(emails, ADMIN_PERMISSION, pm);
+	    	append = (append == null)?Boolean.FALSE:append;
+	    	return this.updateList(ADMIN_PERMISSION, pm, emails, false);
     	} finally {
     		pm.close();
     	}
@@ -584,14 +589,18 @@ public class Housing {
     }
 
     // stores a StringList in the datastore
-    private StringList updateList(List<String> numbers, String listName, PersistenceManager pm){
+    private StringList updateList(String listName, PersistenceManager pm, List<String> str, boolean append){
     	try {
     		StringList rooms = this.getList(listName,pm);
-    		rooms.setStrings(numbers);
+    		if(append){
+    			rooms.getStrings().addAll(str);
+    		}else{
+    			rooms.setStrings(str);
+    		}
     		return pm.makePersistent(rooms);
     	}catch(NotFoundException cce){
     		//there is no list with that key
-    		StringList rooms = new StringList(numbers);
+    		StringList rooms = new StringList(str);
     		rooms.setKey(listName);
     		return pm.makePersistent(rooms);
     	}
