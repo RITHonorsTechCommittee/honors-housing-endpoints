@@ -383,7 +383,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(path="list/room", httpMethod = "PUT")
+    @ApiMethod(path="list/room", httpMethod = "POST")
     public StringList updateRoomList(User user, @Named("rooms") List<String> numbers) throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
@@ -422,7 +422,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(path="list/student", httpMethod = "PUT")
+    @ApiMethod(path="list/student", httpMethod = "POST")
     public StringList updateStudentList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
@@ -461,7 +461,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(path="list/editor", httpMethod = "PUT")
+    @ApiMethod(path="list/editor", httpMethod = "POST")
     public StringList updateEditorList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
@@ -503,7 +503,7 @@ public class Housing {
      * @return the saved list
      * @throws UnauthorizedException if user is not allowed to perform this action
      */
-    @ApiMethod(path="list/admin", httpMethod = "PUT")
+    @ApiMethod(path="list/admin", httpMethod = "POST")
     public StringList updateAdminList(User user, @Named("emails") List<String> emails) 
     		throws UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
