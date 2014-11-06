@@ -63,6 +63,13 @@ public class Housing {
     public FloorList rooms() throws NotFoundException {
         PersistenceManager pm = PMF.get().getPersistenceManager();
         try {
+        	return this.rooms(pm);
+		} finally {
+			pm.close();
+		}
+    }
+	//separate out for persistence manager consistency
+	private FloorList rooms(PersistenceManager pm) throws NotFoundException {
 	        Query q = pm.newQuery(Floor.class);
 	        q.setOrdering("number asc");
 	
@@ -80,10 +87,7 @@ public class Housing {
 	
 	        // Default to 404
 	        throw new NotFoundException("no rooms available");
-		} finally {
-			pm.close();
-		}
-    }
+	}
 
     /**
      * Get the room that the logged in user has reserved.
@@ -133,13 +137,14 @@ public class Housing {
     /**
      * Reserve a room for the logged in user
      * 
-     * @param user The current user, filled automatically by the Endpoints API
+     * @param user The current user, filled automatically by the Endpoints SPI
      * @param room The room number to reserve.
      * @return the updated list of floors
      * @throws NotFoundException if no rooms are available or the room requested does not exist.
      * @throws UnauthorizedException if no one is logged in or the current user is not authorized to reserve rooms.
      * @throws ConflictException if the room is already full
      */
+	//TODO: make way to clear reservation
     @ApiMethod(httpMethod = "PUT")
     public FloorList reserve(User user, @Named("number") Integer room) throws NotFoundException, UnauthorizedException, ConflictException {
         PersistenceManager pm = PMF.get().getPersistenceManager();
@@ -147,7 +152,7 @@ public class Housing {
         	this.authorize(user, pm, STUDENT_PERMISSION);
         
 	        // Get complete list of rooms
-	        FloorList floors = this.rooms();
+	        FloorList floors = this.rooms(pm);
 	        
 	        // Check to make sure the user isn't re-reserving the same room
 	        Reservation current = this.getReservation(user, pm);
@@ -175,8 +180,46 @@ public class Housing {
 		        Reservation newRes = new Reservation(user,room,new Date());
 	            pm.makePersistent(newRes);
 	        }
+	        //TODO: remove user from previous room
 	        r.setOccupants(r.getOccupants()+1);
 	        r.getOccupantNames().add(user.getNickname());
+            return floors;
+        } finally {
+            pm.close();
+        }
+    }
+    
+    /**
+     * Deletes the reservation of a user
+     * 
+     * @param user the currently logged in user, filled automatically by the Endpoints SPI
+     * @return the floors with the reservation removed
+     * @throws UnauthorizedException if the user is not on the student list
+     * @throws NotFoundException if there are no rooms
+     */
+    @ApiMethod(httpMethod = "DELETE")
+    public FloorList deleteReservation(User user) throws UnauthorizedException, NotFoundException {
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+        try {
+        	this.authorize(user, pm, STUDENT_PERMISSION);
+        
+	        // Get complete list of rooms
+	        FloorList floors = this.rooms(pm);
+	        
+	        // Check to make sure the user isn't re-reserving the same room
+	        Reservation current = this.getReservation(user, pm);
+	        if(null == current){
+	        	// Nothing to do.
+	        	return floors;
+	        }
+	        
+	        Room r = floors.getRoom(current.getRoomNumber());
+	        
+	        r.setOccupants(r.getOccupants()-1);
+	        r.getOccupantNames().remove(user.getNickname());
+	        
+	        pm.deletePersistent(current);
+	        
             return floors;
         } finally {
             pm.close();
@@ -544,7 +587,7 @@ public class Housing {
 	                List<Reservation> res = this.getReservationsForRoom(r2,pm);
 	                List<String> names = new ArrayList<String>();
 	                for(Reservation name : res){
-	                	//TODO: make sure we are authorized to access the full name
+	                	//TODO: nickname might not work, but have to test and see
 	                	names.add(name.getUser().getNickname());
 	                }
 	                r2.setOccupants(res.size());
