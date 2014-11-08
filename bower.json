@@ -7,6 +7,6 @@
   ],
   "private": true,
   "dependencies": {
-    "honors-d3-housing": "https://github.com/RITHonorsTechCommittee/honors-d3-housing.git#~0.3.0"
+    "honors-d3-housing": "https://github.com/RITHonorsTechCommittee/honors-d3-housing.git#~0.6.0"
   }
 }

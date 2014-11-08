@@ -9,7 +9,7 @@
   <artifactId>honors-housing-endpoints</artifactId>
  
   <properties>
-    <appengine.target.version>1.9.14</appengine.target.version>
+    <appengine.target.version>1.9.15</appengine.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.webapp.sources>bower_components/honors-d3-housing/dist</project.webapp.sources>
   </properties>
