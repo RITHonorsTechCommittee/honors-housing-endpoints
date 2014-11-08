@@ -120,10 +120,10 @@ public class Housing {
 		}
 		Query q = pm.newQuery(Reservation.class);
         q.setFilter("user == currentUser");
-        q.declareParameters("User currentUser");
+        q.declareParameters("String currentUser");
 
         try {
-            AbstractQueryResult res = (AbstractQueryResult) q.execute(user);
+            AbstractQueryResult res = (AbstractQueryResult) q.execute(user.getEmail());
             if(res.size() == 0){
                 return null;
             }else{
@@ -177,7 +177,7 @@ public class Housing {
 	            current.setRoomNumber(room);
 	        } else {
 		        // Make a new reservation
-		        Reservation newRes = new Reservation(user,room,new Date());
+		        Reservation newRes = new Reservation(user.getEmail(),room,new Date());
 	            pm.makePersistent(newRes);
 	        }
 	        //TODO: remove user from previous room
@@ -588,7 +588,7 @@ public class Housing {
 	                List<String> names = new ArrayList<String>();
 	                for(Reservation name : res){
 	                	//TODO: nickname might not work, but have to test and see
-	                	names.add(name.getUser().getNickname());
+	                	names.add(name.getFullname());
 	                }
 	                r2.setOccupants(res.size());
 	                r2.setOccupantNames(names);
@@ -668,7 +668,7 @@ public class Housing {
 	    	}
 		}
     	//TODO: remove for production
-    	authorized = true;
+    	//authorized = true;
 		if( !authorized ){
 			String lists = Arrays.deepToString(permission);
 			throw new UnauthorizedException("You ("+email+") must be on one of "+lists+" to perform this action");

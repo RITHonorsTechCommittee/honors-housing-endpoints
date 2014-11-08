@@ -8,8 +8,6 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 import javax.jdo.annotations.IdGeneratorStrategy;
 
-import com.google.appengine.api.users.User;
-
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class Reservation {
 
@@ -21,14 +19,17 @@ public class Reservation {
     private Integer roomNumber;
 
     @Persistent
-    private User user;
+    private String user;
+    
+    @Persistent
+    private String fullname;
 
     @Persistent
     private Date date;
 
     public Reservation(){}
 
-    public Reservation(User user, Integer roomNumber, Date date) {
+    public Reservation(String user, Integer roomNumber, Date date) {
         this.user = user;
         this.roomNumber = roomNumber;
         this.date = date;
@@ -38,12 +39,20 @@ public class Reservation {
         return id;
     }
 
-    public User getUser() {
+    public String getUser() {
         return user;
     }
 
-    public void setUser(User user) {
+    public void setUser(String user) {
         this.user = user;
+    }
+
+    public String getFullname() {
+        return fullname;
+    }
+
+    public void setFullname(String fullname) {
+        this.fullname = fullname;
     }
 
     public Integer getRoomNumber() {
