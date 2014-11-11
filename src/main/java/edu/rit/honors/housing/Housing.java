@@ -174,15 +174,20 @@ public class Housing {
         
 	        if( current != null ) {
 	        	// change the room number of the reservation
+	        	Integer oldRoom = current.getRoomNumber();
+	            if(!floors.getRoom(oldRoom).deleteOccupant(user.getNickname())){
+	            	Logger.getGlobal().warning("Could not delete old reservation for room "+oldRoom);
+	            } else {
+	            	Logger.getGlobal().info("Deleted old reservation for room "+oldRoom);
+	            }
 	            current.setRoomNumber(room);
 	        } else {
 		        // Make a new reservation
-		        Reservation newRes = new Reservation(user.getEmail(),room,new Date());
+		        Reservation newRes = new Reservation(user.getEmail(),user.getNickname(),room,new Date());
 	            pm.makePersistent(newRes);
 	        }
-	        //TODO: remove user from previous room
-	        r.setOccupants(r.getOccupants()+1);
-	        r.getOccupantNames().add(user.getNickname());
+	        
+	        r.addOccupant(user.getNickname());
             return floors;
         } finally {
             pm.close();
@@ -391,8 +396,9 @@ public class Housing {
     	try{
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	Room r = this.getRoom(number,pm);
+	    	Room retVal = new Room(r);
     		pm.deletePersistent(r);
-        	return r;
+        	return retVal;
     	}finally{
     		pm.close();
     	}
@@ -583,7 +589,11 @@ public class Housing {
             tempRooms = new ArrayList<Room>();
             for( Room r : f.getRooms() ){
                 r2 = new Room(r);
-                if(rooms.getStrings().contains(r2.getNumber().toString())){
+                if(r2.getNumber() == null){
+                	continue;
+                }
+                String num = r2.getNumber().toString();
+                if(rooms.getStrings().contains(num)){
 	                List<Reservation> res = this.getReservationsForRoom(r2,pm);
 	                List<String> names = new ArrayList<String>();
 	                for(Reservation name : res){
@@ -595,10 +605,12 @@ public class Housing {
 	                tempRooms.add(r2);
                 }
             }
-            f2 = new Floor();
-            f2.setNumber(f.getNumber());
-            f2.setRooms(tempRooms);
-            retVal.add(f2);
+            if(tempRooms.size() > 0) {
+	            f2 = new Floor();
+	            f2.setNumber(f.getNumber());
+	            f2.setRooms(tempRooms);
+	            retVal.add(f2);
+            }
         }
         
         return retVal;
@@ -653,13 +665,20 @@ public class Housing {
 		boolean authorized = false;
 		String email = "";
     	if(user != null && user.getEmail() != null){
+    		email = user.getEmail();
+    		if(email.equals("example@example.com")) { // dev server
+    			return;
+    		}
     		for( String list : permission){
-	    		email = user.getEmail();
 	    		try {
 	    			StringList emails = this.getList(list,pm);
 	    			authorized = (emails.getStrings() != null) && emails.getStrings().contains(email);
-					if( !authorized && list == ADMIN_PERMISSION ){
+					if( !authorized && list.equals(ADMIN_PERMISSION) ){
 						authorized = 0 <= Arrays.binarySearch(DEFAULT_ADMINS, email);
+					}
+					// break out of loop
+					if(authorized) {
+						return;
 					}
 	    		} catch (NotFoundException e) {
 	    			Logger l = Logger.getLogger(this.getClass().getName());

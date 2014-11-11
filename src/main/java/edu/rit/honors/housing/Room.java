@@ -1,5 +1,6 @@
 package edu.rit.honors.housing;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -102,11 +103,36 @@ public class Room {
     }
     
     public List<String> getOccupantNames() {
-    	return occupantNames;
+    	if(occupantNames != null && occupantNames.size() > 0) {
+    		return occupantNames;
+    	} else {
+    		return null;
+    	}
     }
     
     public void setOccupantNames(List<String> names) {
     	this.occupantNames = names;
+    }
+    
+    public boolean addOccupant(String occupantName) {
+    	if(this.occupantNames == null){
+    		this.occupantNames = new ArrayList<String>(this.capacity);
+    	}
+    	if(this.occupantNames.add(occupantName)) {
+    		this.occupants += 1;
+    		return true;
+    	} else {
+    		return false;
+    	}
+    }
+    
+    public boolean deleteOccupant(String occupantName) {
+    	if(this.occupantNames != null && this.occupantNames.remove(occupantName)) {
+    		this.occupants -= 1;
+    		return true;
+    	} else {
+    		return false;
+    	}
     }
     
     /**

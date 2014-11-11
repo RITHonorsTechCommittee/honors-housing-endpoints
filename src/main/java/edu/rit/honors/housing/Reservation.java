@@ -29,8 +29,9 @@ public class Reservation {
 
     public Reservation(){}
 
-    public Reservation(String user, Integer roomNumber, Date date) {
-        this.user = user;
+    public Reservation(String email, String fullname, Integer roomNumber, Date date) {
+        this.user = email;
+        this.fullname = fullname;
         this.roomNumber = roomNumber;
         this.date = date;
     }

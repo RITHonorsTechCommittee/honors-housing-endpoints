@@ -27,12 +27,13 @@ public class FloorList {
 	 * @return the Room with that number or null if not found
 	 */
 	public Room getRoom(Integer room) {
-		Room r = new Room();
-        r.setNumber(room);
-        int index;
         for(Floor f : this.getFloors()){
-        	if((index = f.getRooms().indexOf(r)) > -1){
-        		return f.getRooms().get(index);
+        	if(f.getRooms() != null){
+	        	for(Room r : f.getRooms()) {
+	        		if(r.getNumber() != null && r.getNumber().equals(room)){
+	        			return r;
+	        		}
+	        	}
         	}
         }
 		return null;
