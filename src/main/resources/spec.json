@@ -1,0 +1,173 @@
+{
+    "floors": [
+    {
+        "number": "2a",
+        "rooms": [
+            { "number": 2062, "capacity": 1, "occupants": 0, "x": 734, "y":  61, "bgpath":  0 },
+            { "number": 2063, "capacity": 2, "occupants": 0, "x": 721, "y": 180, "bgpath":  1 },
+            { "number": 2064, "capacity": 1, "occupants": 0, "x": 681, "y":  61, "bgpath":  0 },
+            { "number": 2066, "capacity": 1, "occupants": 0, "x": 627, "y":  61, "bgpath":  0 },
+            { "number": 2067, "capacity": 2, "occupants": 0, "x": 639, "y": 180, "bgpath":  1 },
+            { "number": 2070, "capacity": 2, "occupants": 0, "x": 558, "y":  61, "bgpath":  2 },
+            { "number": 2071, "capacity": 2, "occupants": 0, "x": 558, "y": 180, "bgpath":  1 },
+            { "number": 2074, "capacity": 2, "occupants": 0, "x": 477, "y":  61, "bgpath":  2 },
+            { "number": 2075, "capacity": 2, "occupants": 0, "x": 477, "y": 180, "bgpath":  1 },
+            { "number": 2078, "capacity": 2, "occupants": 0, "x": 396, "y":  61, "bgpath":  2 },
+            { "number": 2079, "capacity": 2, "occupants": 0, "x": 396, "y": 180, "bgpath":  1 },
+            { "number": 2083, "capacity": 2, "occupants": 0, "x": 314, "y": 180, "bgpath":  1 },
+            { "number": 2086, "capacity": 2, "occupants": 0, "x": 234, "y":  61, "bgpath":  2 },
+            { "number": 2090, "capacity": 2, "occupants": 0, "x": 153, "y":  61, "bgpath":  2 },
+            { "number": 2094, "capacity": 2, "occupants": 0, "x":  71, "y":  61, "bgpath":  2 },
+            { "number": 2106, "capacity": 2, "occupants": 0, "x":  84, "y": 249, "bgpath":  3 },
+            { "number": 2110, "capacity": 2, "occupants": 0, "x":  84, "y": 308, "bgpath":  3 },
+            { "number": 2111, "capacity": 2, "occupants": 0, "x": 221, "y": 308, "bgpath":  3 },
+            { "number": 2114, "capacity": 2, "occupants": 0, "x":  84, "y": 368, "bgpath":  3 },
+            { "number": 2115, "capacity": 2, "occupants": 0, "x": 221, "y": 368, "bgpath":  3 },
+            { "number": 2118, "capacity": 2, "occupants": 0, "x":  84, "y": 427, "bgpath":  3 },
+            { "number": 2119, "capacity": 2, "occupants": 0, "x": 221, "y": 427, "bgpath":  3 },
+            { "number": 2120, "capacity": 3, "occupants": 0, "x":  84, "y": 513, "bgpath":  4 },
+            { "number": 2123, "capacity": 2, "occupants": 0, "x": 221, "y": 486, "bgpath":  3 }
+        ]
+    },
+    {
+        "number": "2b",
+        "rooms": [
+            { "number": 2008, "capacity": 2, "occupants": 0, "x": 538, "y": 433, "bgpath":  5 },
+            { "number": 2017, "capacity": 1, "occupants": 0, "x": 550, "y": 546, "bgpath":  6 },
+            { "number": 2021, "capacity": 1, "occupants": 0, "x": 496, "y": 546, "bgpath":  6 },
+            { "number": 2023, "capacity": 1, "occupants": 0, "x": 441, "y": 546, "bgpath":  7 },
+            { "number": 2027, "capacity": 2, "occupants": 0, "x": 375, "y": 546, "bgpath":  8 },
+            { "number": 2036, "capacity": 2, "occupants": 0, "x": 444, "y": 364, "bgpath":  3 },
+            { "number": 2037, "capacity": 2, "occupants": 0, "x": 308, "y": 364, "bgpath":  3 },
+            { "number": 2040, "capacity": 2, "occupants": 0, "x": 444, "y": 301, "bgpath":  3 },
+            { "number": 2041, "capacity": 2, "occupants": 0, "x": 308, "y": 301, "bgpath":  3 },
+            { "number": 2044, "capacity": 2, "occupants": 0, "x": 444, "y": 240, "bgpath":  3 },
+            { "number": 2045, "capacity": 2, "occupants": 0, "x": 308, "y": 240, "bgpath":  3 },
+            { "number": 2048, "capacity": 2, "occupants": 0, "x": 444, "y": 177, "bgpath":  3 },
+            { "number": 2049, "capacity": 2, "occupants": 0, "x": 308, "y": 177, "bgpath":  3 },
+            { "number": 2051, "capacity": 4, "occupants": 0, "x": 311, "y":  83, "bgpath":  9 }
+        ]
+    },
+    {
+        "number": "3a",
+        "rooms": [
+            { "number": 3062, "capacity": 1, "occupants": 0, "x": 734, "y":  61, "bgpath":  0 },
+            { "number": 3063, "capacity": 2, "occupants": 0, "x": 721, "y": 180, "bgpath":  1 },
+            { "number": 3064, "capacity": 1, "occupants": 0, "x": 681, "y":  61, "bgpath":  0 },
+            { "number": 3066, "capacity": 1, "occupants": 0, "x": 627, "y":  61, "bgpath":  0 },
+            { "number": 3067, "capacity": 2, "occupants": 0, "x": 639, "y": 180, "bgpath":  1 },
+            { "number": 3070, "capacity": 2, "occupants": 0, "x": 558, "y":  61, "bgpath":  2 },
+            { "number": 3071, "capacity": 2, "occupants": 0, "x": 558, "y": 180, "bgpath":  1 },
+            { "number": 3074, "capacity": 2, "occupants": 0, "x": 477, "y":  61, "bgpath":  2 },
+            { "number": 3075, "capacity": 2, "occupants": 0, "x": 477, "y": 180, "bgpath":  1 },
+            { "number": 3078, "capacity": 2, "occupants": 0, "x": 396, "y":  61, "bgpath":  2 },
+            { "number": 3079, "capacity": 2, "occupants": 0, "x": 396, "y": 180, "bgpath":  1 },
+            { "number": 3082, "capacity": 2, "occupants": 0, "x": 314, "y":  61, "bgpath":  2 },
+            { "number": 3086, "capacity": 2, "occupants": 0, "x": 234, "y":  61, "bgpath":  2 },
+            { "number": 3090, "capacity": 2, "occupants": 0, "x": 153, "y":  61, "bgpath":  2 },
+            { "number": 3094, "capacity": 3, "occupants": 0, "x":  72, "y":  80, "bgpath": 10 },
+            { "number": 3106, "capacity": 2, "occupants": 0, "x":  84, "y": 249, "bgpath":  3 },
+            { "number": 3110, "capacity": 2, "occupants": 0, "x":  84, "y": 308, "bgpath":  3 },
+            { "number": 3111, "capacity": 2, "occupants": 0, "x": 221, "y": 308, "bgpath":  3 },
+            { "number": 3113, "capacity": 4, "occupants": 0, "x": 221, "y": 395, "bgpath": 11 },
+            { "number": 3114, "capacity": 2, "occupants": 0, "x":  84, "y": 368, "bgpath": 12 },
+            { "number": 3118, "capacity": 2, "occupants": 0, "x":  84, "y": 427, "bgpath":  3 },
+            { "number": 3122, "capacity": 2, "occupants": 0, "x":  84, "y": 486, "bgpath":  3 },
+            { "number": 3123, "capacity": 2, "occupants": 0, "x": 221, "y": 486, "bgpath":  3 },
+            { "number": 3126, "capacity": 2, "occupants": 0, "x":  84, "y": 546, "bgpath":  3 }
+        ]
+    },
+    {
+        "number": "3b",
+        "rooms": [
+            { "number": 3008, "capacity": 3, "occupants": 0, "x": 606, "y": 429, "bgpath": 13 },
+            { "number": 3016, "capacity": 1, "occupants": 0, "x": 524, "y": 429, "bgpath": 14 },
+            { "number": 3023, "capacity": 1, "occupants": 0, "x": 470, "y": 546, "bgpath": 15 },
+            { "number": 3025, "capacity": 1, "occupants": 0, "x": 415, "y": 546, "bgpath": 15 },
+            { "number": 3027, "capacity": 1, "occupants": 0, "x": 361, "y": 546, "bgpath": 15 },
+            { "number": 3036, "capacity": 2, "occupants": 0, "x": 444, "y": 364, "bgpath":  3 },
+            { "number": 3037, "capacity": 2, "occupants": 0, "x": 308, "y": 364, "bgpath":  3 },
+            { "number": 3040, "capacity": 2, "occupants": 0, "x": 444, "y": 301, "bgpath":  3 },
+            { "number": 3041, "capacity": 2, "occupants": 0, "x": 308, "y": 301, "bgpath":  3 },
+            { "number": 3045, "capacity": 2, "occupants": 0, "x": 308, "y": 240, "bgpath":  3 },
+            { "number": 3049, "capacity": 2, "occupants": 0, "x": 308, "y": 177, "bgpath":  3 },
+            { "number": 3052, "capacity": 2, "occupants": 0, "x": 444, "y": 115, "bgpath":  3 },
+            { "number": 3053, "capacity": 2, "occupants": 0, "x": 308, "y": 115, "bgpath":  3 },
+            { "number": 3057, "capacity": 2, "occupants": 0, "x": 308, "y":  53, "bgpath":  3 }
+        ]
+    },
+    {
+        "number": "4a",
+        "rooms": [
+            { "number": 4062, "capacity": 2, "occupants": 0, "x": 720, "y":  61, "bgpath":  2 },
+            { "number": 4063, "capacity": 1, "occupants": 0, "x": 721, "y": 180, "bgpath":  1 },
+            { "number": 4067, "capacity": 2, "occupants": 0, "x": 639, "y": 180, "bgpath":  1 },
+            { "number": 4068, "capacity": 2, "occupants": 0, "x": 639, "y":  61, "bgpath":  2 },
+            { "number": 4070, "capacity": 2, "occupants": 0, "x": 558, "y":  61, "bgpath":  2 },
+            { "number": 4071, "capacity": 2, "occupants": 0, "x": 558, "y": 180, "bgpath":  1 },
+            { "number": 4074, "capacity": 2, "occupants": 0, "x": 477, "y":  61, "bgpath":  2 },
+            { "number": 4075, "capacity": 2, "occupants": 0, "x": 478, "y": 180, "bgpath":  1 },
+            { "number": 4078, "capacity": 2, "occupants": 0, "x": 396, "y":  61, "bgpath":  2 },
+            { "number": 4079, "capacity": 2, "occupants": 0, "x": 396, "y": 180, "bgpath":  1 },
+            { "number": 4083, "capacity": 2, "occupants": 0, "x": 315, "y": 180, "bgpath":  1 },
+            { "number": 4086, "capacity": 2, "occupants": 0, "x": 235, "y":  61, "bgpath":  2 },
+            { "number": 4090, "capacity": 2, "occupants": 0, "x": 154, "y":  61, "bgpath":  2 },
+            { "number": 4096, "capacity": 3, "occupants": 0, "x":  72, "y":  80, "bgpath": 10 },
+            { "number": 4106, "capacity": 2, "occupants": 0, "x":  84, "y": 249, "bgpath":  3 },
+            { "number": 4110, "capacity": 2, "occupants": 0, "x":  84, "y": 308, "bgpath":  3 },
+            { "number": 4111, "capacity": 2, "occupants": 0, "x": 221, "y": 308, "bgpath":  3 },
+            { "number": 4113, "capacity": 4, "occupants": 0, "x": 221, "y": 395, "bgpath": 11 },
+            { "number": 4114, "capacity": 2, "occupants": 0, "x":  84, "y": 368, "bgpath":  3 },
+            { "number": 4118, "capacity": 2, "occupants": 0, "x":  84, "y": 427, "bgpath":  3 },
+            { "number": 4122, "capacity": 2, "occupants": 0, "x":  84, "y": 486, "bgpath":  3 },
+            { "number": 4123, "capacity": 2, "occupants": 0, "x": 221, "y": 486, "bgpath":  3 },
+            { "number": 4126, "capacity": 2, "occupants": 0, "x":  84, "y": 546, "bgpath":  3 }
+        ]
+    },
+    {
+        "number": "4b",
+        "rooms": [
+            { "number": 4004, "capacity": 1, "occupants": 0, "x": 714, "y": 436, "bgpath": 15 },
+            { "number": 4005, "capacity": 2, "occupants": 0, "x": 700, "y": 546, "bgpath": 16 },
+            { "number": 4008, "capacity": 1, "occupants": 0, "x": 659, "y": 436, "bgpath": 17 },
+            { "number": 4012, "capacity": 1, "occupants": 0, "x": 605, "y": 436, "bgpath": 17 },
+            { "number": 4017, "capacity": 1, "occupants": 0, "x": 550, "y": 546, "bgpath": 17 },
+            { "number": 4021, "capacity": 1, "occupants": 0, "x": 496, "y": 546, "bgpath": 17 },
+            { "number": 4023, "capacity": 1, "occupants": 0, "x": 442, "y": 546, "bgpath": 17 },
+            { "number": 4027, "capacity": 2, "occupants": 0, "x": 375, "y": 546, "bgpath": 16 },
+            { "number": 4036, "capacity": 2, "occupants": 0, "x": 444, "y": 364, "bgpath":  3 },
+            { "number": 4037, "capacity": 2, "occupants": 0, "x": 308, "y": 364, "bgpath":  3 },
+            { "number": 4040, "capacity": 2, "occupants": 0, "x": 444, "y": 301, "bgpath":  3 },
+            { "number": 4041, "capacity": 2, "occupants": 0, "x": 308, "y": 301, "bgpath":  3 },
+            { "number": 4044, "capacity": 4, "occupants": 0, "x": 444, "y": 210, "bgpath": 18 },
+            { "number": 4045, "capacity": 2, "occupants": 0, "x": 308, "y": 240, "bgpath":  3 },
+            { "number": 4049, "capacity": 2, "occupants": 0, "x": 308, "y": 177, "bgpath":  3 },
+            { "number": 4052, "capacity": 2, "occupants": 0, "x": 444, "y": 115, "bgpath":  3 },
+            { "number": 4053, "capacity": 2, "occupants": 0, "x": 308, "y": 115, "bgpath":  3 },
+            { "number": 4057, "capacity": 2, "occupants": 0, "x": 308, "y":  53, "bgpath":  3 }
+        ]
+    },
+    {
+        "number": "5b",
+        "rooms": [
+            { "number": 5004, "capacity": 2, "occupants": 0, "x": 698, "y": 430, "bgpath": 19 },
+            { "number": 5005, "capacity": 2, "occupants": 0, "x": 698, "y": 545, "bgpath": 16 },
+            { "number": 5010, "capacity": 2, "occupants": 0, "x": 618, "y": 430, "bgpath": 19 },
+            { "number": 5016, "capacity": 2, "occupants": 0, "x": 538, "y": 430, "bgpath": 19 },
+            { "number": 5021, "capacity": 1, "occupants": 0, "x": 470, "y": 544, "bgpath": 17 },
+            { "number": 5023, "capacity": 1, "occupants": 0, "x": 417, "y": 544, "bgpath": 17 },
+            { "number": 5027, "capacity": 1, "occupants": 0, "x": 361, "y": 544, "bgpath": 17 },
+            { "number": 5036, "capacity": 2, "occupants": 0, "x": 444, "y": 364, "bgpath": 20 },
+            { "number": 5037, "capacity": 2, "occupants": 0, "x": 308, "y": 364, "bgpath": 20 },
+            { "number": 5040, "capacity": 2, "occupants": 0, "x": 444, "y": 301, "bgpath": 20 },
+            { "number": 5041, "capacity": 2, "occupants": 0, "x": 308, "y": 301, "bgpath": 20 },
+            { "number": 5044, "capacity": 2, "occupants": 0, "x": 444, "y": 238, "bgpath": 20 },
+            { "number": 5045, "capacity": 2, "occupants": 0, "x": 308, "y": 238, "bgpath": 20 },
+            { "number": 5048, "capacity": 2, "occupants": 0, "x": 444, "y": 176, "bgpath": 20 },
+            { "number": 5049, "capacity": 2, "occupants": 0, "x": 308, "y": 176, "bgpath": 20 },
+            { "number": 5051, "capacity": 3, "occupants": 0, "x": 308, "y":  84, "bgpath": 18 },
+            { "number": 5052, "capacity": 2, "occupants": 0, "x": 444, "y": 115, "bgpath": 20 }
+        ]
+    }
+]
+}

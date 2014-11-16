@@ -11,7 +11,17 @@ import com.google.api.server.spi.response.ServiceUnavailableException;
 import com.google.api.server.spi.response.UnauthorizedException;
 import com.google.appengine.api.users.User;
 import com.google.devrel.samples.ttt.PMF;
+import com.google.gson.Gson;
 
+import edu.rit.honors.housing.datastore.Initializer;
+import edu.rit.honors.housing.datastore.ListHelper;
+import edu.rit.honors.housing.jdo.Floor;
+import edu.rit.honors.housing.jdo.FloorList;
+import edu.rit.honors.housing.jdo.Reservation;
+import edu.rit.honors.housing.jdo.Room;
+import edu.rit.honors.housing.jdo.StringList;
+
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -20,7 +30,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Named;
-import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
@@ -230,6 +239,13 @@ public class Housing {
             pm.close();
         }
     }
+    
+    @ApiMethod(httpMethod = "POST")
+    public void initialize(User user) throws UnauthorizedException, NotFoundException {
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	authorize(user,pm,ADMIN_PERMISSION);
+    	Initializer.init(pm);
+    }
 
 	/*
      * CRUD for rooms
@@ -279,6 +295,47 @@ public class Housing {
     }
     
     /**
+     * Gets a single floor.  Like getRoom, does not filter by the room list
+     * or compute occupants from reservations in the datastore.
+     * 
+     * @param user The current user, filled automatically by the Endpoints SPI
+     * @param room The floor number
+     * @return The first matched floor with the number requested, if it exists
+     * @throws UnauthorizedException if the currently logged in user is not an Editor or Admin
+     * @throws NotFoundException if no floor with that number exists
+     */
+    @ApiMethod(httpMethod = "GET")
+    public Floor getFloor(User user, @Named("number") String number) 
+    		throws UnauthorizedException, NotFoundException {
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	this.authorize(user, pm, Housing.EDIT_PERMISSION, Housing.ADMIN_PERMISSION);
+    	return this.getFloor(number,pm);
+    }
+    
+    private Floor getFloor(String number, PersistenceManager pm) 
+    		throws NotFoundException {
+    	Query q = pm.newQuery(Floor.class);
+    	q.setFilter("number == floorNumber");
+    	q.declareParameters("String floorNumber");
+    	
+    	try{
+    		AbstractQueryResult res = (AbstractQueryResult) q.execute(number);
+    		if( res.isEmpty() ){
+    	    	// throw 404 if no room available
+    			throw new NotFoundException("Could not find floor "+number.toString());
+    		}else{
+    			if( res.size() > 1 ) {
+    				//Logger.getGlobal().warning("Floor "+number"+" has a duplicate!");
+    				Logger.getGlobal().warning("Floor "+number+" has a duplicate!");
+    			}
+    			return (Floor) res.get(0);
+    		}
+    	}finally{
+    		q.closeAll();
+    	}
+    }
+    
+    /**
      * Create a new Room object from the specified properties.  All parameters are required.
      * 
      * @param user The current user, filled automatically by the Endpoints SPI
@@ -286,7 +343,7 @@ public class Housing {
      * @param x The x position of the room (in pixels)
      * @param y The y position of the room (in pixels)
      * @param cap The room capacity
-     * @param shading The SVG path to shade the room (optional)
+     * @param bgpath The SVG path to shade the room (optional)
      * @return The Room created
      * @throws ServiceUnavailableException if an internal error occurs
      * @throws ForbiddenException if the room already exists
@@ -295,7 +352,7 @@ public class Housing {
     @ApiMethod(httpMethod = "POST")
     public Room createRoom(User user, @Named("number") Integer num, @Named("floor") String floor,
     		@Named("x") Integer x, @Named("y") Integer y, @Named("capacity") Integer cap, 
-    		@Nullable @Named("shading") String shading)
+    		@Nullable @Named("bgpath") String bgpath)
     				throws ServiceUnavailableException, ForbiddenException, UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try{
@@ -311,8 +368,8 @@ public class Housing {
     		r.setNumber(num);
     		r.setX(x);
     		r.setY(y);
-    		if(null != shading) {
-    			r.setShading(shading);
+    		if(null != bgpath) {
+    			r.setBgpath(bgpath);
     		}
     		// find floor to which the room will be added
     		Query q = pm.newQuery(Floor.class);
@@ -336,6 +393,35 @@ public class Housing {
 		}	
     }
     
+    @ApiMethod(httpMethod = "POST")
+    public Floor createFloor(User user, @Named("floor") String floor,
+    		@Named("rooms") String roomsJSON)
+    				throws ForbiddenException, UnauthorizedException{
+    	PersistenceManager pm = PMF.get().getPersistenceManager();
+    	try{
+	    	this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
+	    	// search for existing room
+    		// this should throw a NotFoundException
+    		this.getFloor(floor,pm);
+    		throw new ForbiddenException("Room already exists");
+    	}catch(NotFoundException nfe){
+    		Type listType = new com.google.gson.reflect.TypeToken<List<Room>>() {}.getType();
+
+    		Gson gson = new Gson();
+    		List<Room> rooms = gson.fromJson(roomsJSON, listType);
+    		
+    		Floor f = new Floor();
+    		f.setNumber(floor);
+    		f.setRooms(rooms);
+    		
+    		return pm.makePersistent(f);
+    	}finally{
+			pm.close();
+		}	
+    }
+    
+    
+    
     /**
      * Update an existing Room object, specified by the room number.  
      * Throws a 404 NotFoundException if the Room does not already exist.
@@ -353,7 +439,7 @@ public class Housing {
     @ApiMethod(httpMethod = "PUT")
     public Room updateRoom(User user, @Named("number") Integer number, 
     		@Nullable @Named("x") Integer x, @Nullable @Named("y") Integer y, 
-    		@Nullable @Named("capacity") Integer cap, @Nullable @Named("shading") String shading) 
+    		@Nullable @Named("capacity") Integer cap, @Nullable @Named("bgpath") String bgpath) 
     				throws ServiceUnavailableException, NotFoundException, UnauthorizedException{
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try{
@@ -370,8 +456,8 @@ public class Housing {
     		if( null != cap){
     			r.setCapacity(cap);
     		}
-    		if(null != shading) {
-    			r.setShading(shading);
+    		if(null != bgpath) {
+    			r.setBgpath(bgpath);
     		}
     		return r;
     	} finally {
@@ -417,7 +503,7 @@ public class Housing {
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
     		this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
-    		return this.getList(Housing.ROOM_LIST, pm);
+    		return ListHelper.getList(Housing.ROOM_LIST, pm);
     	} finally {
     		pm.close();
     	}
@@ -439,7 +525,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return this.updateList(Housing.ROOM_LIST, pm, numbers, append.booleanValue());
+	    	return ListHelper.updateList(Housing.ROOM_LIST, pm, numbers, append.booleanValue());
     	} finally {
     		pm.close();
     	}
@@ -459,7 +545,7 @@ public class Housing {
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
 	    	this.authorize(user, pm, EDIT_PERMISSION, ADMIN_PERMISSION);
-	    	return this.getList(STUDENT_PERMISSION, pm);
+	    	return ListHelper.getList(STUDENT_PERMISSION, pm);
     	} finally {
     		pm.close();
     	}
@@ -480,7 +566,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return this.updateList(STUDENT_PERMISSION, pm, emails, append.booleanValue());
+	    	return ListHelper.updateList(STUDENT_PERMISSION, pm, emails, append.booleanValue());
     	} finally {
     		pm.close();
     	}
@@ -499,7 +585,7 @@ public class Housing {
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
-	    	return this.getList(EDIT_PERMISSION, pm);
+	    	return ListHelper.getList(EDIT_PERMISSION, pm);
     	} finally {
     		pm.close();
     	}
@@ -520,7 +606,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return this.updateList(EDIT_PERMISSION, pm, emails, false);
+	    	return ListHelper.updateList(EDIT_PERMISSION, pm, emails, false);
     	} finally {
     		pm.close();
     	}
@@ -538,7 +624,7 @@ public class Housing {
     	PersistenceManager pm = PMF.get().getPersistenceManager();
     	try {
     		this.authorize(user, pm, ADMIN_PERMISSION);
-    		return this.getList(ADMIN_PERMISSION, pm);
+    		return ListHelper.getList(ADMIN_PERMISSION, pm);
     	}catch(NotFoundException nfe){
     		// ensure there are always some admins
     		List<String> defaults = Arrays.asList(Housing.DEFAULT_ADMINS);
@@ -563,7 +649,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return this.updateList(ADMIN_PERMISSION, pm, emails, false);
+	    	return ListHelper.updateList(ADMIN_PERMISSION, pm, emails, false);
     	} finally {
     		pm.close();
     	}
@@ -583,13 +669,14 @@ public class Housing {
         ArrayList<Floor> retVal = new ArrayList<Floor>();
         Floor f2;
         Room r2;
-
-        StringList rooms = this.getList(Housing.ROOM_LIST,pm);
+        Logger logger = Logger.getGlobal();
+        StringList rooms = ListHelper.getList(Housing.ROOM_LIST,pm);
         for( Floor f : floors) {
             tempRooms = new ArrayList<Room>();
             for( Room r : f.getRooms() ){
                 r2 = new Room(r);
                 if(r2.getNumber() == null){
+                	logger.info("Room "+r2+" has a null number.");
                 	continue;
                 }
                 String num = r2.getNumber().toString();
@@ -603,9 +690,12 @@ public class Housing {
 	                r2.setOccupants(res.size());
 	                r2.setOccupantNames(names);
 	                tempRooms.add(r2);
+                } else {
+                	logger.info("Room "+num+" is not on room list.");
                 }
             }
             if(tempRooms.size() > 0) {
+            	//logger.info("Adding floor "+f.getNumber());
 	            f2 = new Floor();
 	            f2.setNumber(f.getNumber());
 	            f2.setRooms(tempRooms);
@@ -634,33 +724,6 @@ public class Housing {
         }
     }
     
-    // gets a StringList from the datastore
-    private StringList getList(String listName, PersistenceManager pm) throws NotFoundException{
-    	try{
-    		return pm.getObjectById(StringList.class, listName);
-    	}catch(JDOObjectNotFoundException jdoe){
-    		throw new NotFoundException("List "+listName+" not found");
-    	}
-    }
-
-    // stores a StringList in the datastore
-    private StringList updateList(String listName, PersistenceManager pm, List<String> str, boolean append){
-    	try {
-    		StringList rooms = this.getList(listName,pm);
-    		if(append){
-    			rooms.getStrings().addAll(str);
-    		}else{
-    			rooms.setStrings(str);
-    		}
-    		return pm.makePersistent(rooms);
-    	}catch(NotFoundException cce){
-    		//there is no list with that key
-    		StringList rooms = new StringList(str);
-    		rooms.setKey(listName);
-    		return pm.makePersistent(rooms);
-    	}
-    }
-    
     private void authorize(User user, PersistenceManager pm, String... permission) throws UnauthorizedException {
 		boolean authorized = false;
 		String email = "";
@@ -671,7 +734,7 @@ public class Housing {
     		}
     		for( String list : permission){
 	    		try {
-	    			StringList emails = this.getList(list,pm);
+	    			StringList emails = ListHelper.getList(list,pm);
 	    			authorized = (emails.getStrings() != null) && emails.getStrings().contains(email);
 					if( !authorized && list.equals(ADMIN_PERMISSION) ){
 						authorized = 0 <= Arrays.binarySearch(DEFAULT_ADMINS, email);

@@ -1,4 +1,4 @@
-package edu.rit.honors.housing;
+package edu.rit.honors.housing.jdo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ public class Room {
     private Integer y;
     
     @Persistent
-    private String shading = "";
+    private String bgpath = "";
 
     @NotPersistent
     private Integer occupants = 0;
@@ -51,7 +51,7 @@ public class Room {
         this.x = r.x;
         this.y = r.y;
         this.occupants = r.occupants;
-        this.shading = r.shading;
+        this.bgpath = r.bgpath;
     }
     
     public Integer getNumber() {
@@ -86,12 +86,12 @@ public class Room {
         this.y = y;
     }
     
-    public String getShading() {
-    	return shading;
+    public String getBgpath() {
+    	return bgpath;
     }
     
-    public void setShading(String shading) {
-    	this.shading = shading;
+    public void setBgpath(String shading) {
+    	this.bgpath = shading;
     }
 
     public Integer getOccupants() {
@@ -157,7 +157,7 @@ public class Room {
     public boolean identical(Object other){
     	if(this.equals(other)){
     		Room r = (Room)other;
-    		return this.x == r.x && this.y == r.y && this.capacity == r.capacity && this.shading == r.shading;
+    		return this.x == r.x && this.y == r.y && this.capacity == r.capacity && this.bgpath == r.bgpath;
     	}else{
     		return false;
     	}

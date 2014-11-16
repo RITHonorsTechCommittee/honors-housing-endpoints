@@ -1,4 +1,4 @@
-package edu.rit.honors.housing;
+package edu.rit.honors.housing.jdo;
 
 import java.util.Date;
 
