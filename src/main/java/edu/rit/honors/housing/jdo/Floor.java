@@ -17,7 +17,7 @@ public class Floor {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key key;
 
-    public void setKey(Key key) {
+	public void setKey(Key key) {
         this.key = key;
     }
 
@@ -42,5 +42,11 @@ public class Floor {
     public void setRooms(List<Room> rooms) {
         this.rooms = rooms;
     }
+    
+    public Floor() {}
+
+    public Floor(List<Room> rooms) {
+		this.rooms = rooms;
+	}
 
 }
