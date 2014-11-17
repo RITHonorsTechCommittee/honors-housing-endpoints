@@ -74,6 +74,7 @@ public class RoomHelper {
 	
 	public FloorList getAllFloors() {
 		Query q = pm.newQuery(Floor.class);
+		q.setOrdering("number asc");
 		AbstractQueryResult res = (AbstractQueryResult) q.execute();
 		
 		if( res.isEmpty() ){
