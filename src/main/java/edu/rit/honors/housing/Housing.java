@@ -434,7 +434,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return ListHelper.updateList(Housing.ROOM_LIST, pm, numbers, append.booleanValue());
+	    	return ListHelper.updateList(Housing.ROOM_LIST, pm, numbers, append);
     	} finally {
     		pm.close();
     	}
@@ -475,7 +475,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return ListHelper.updateList(STUDENT_PERMISSION, pm, emails, append.booleanValue());
+	    	return ListHelper.updateList(STUDENT_PERMISSION, pm, emails, append);
     	} finally {
     		pm.close();
     	}
@@ -515,7 +515,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return ListHelper.updateList(EDIT_PERMISSION, pm, emails, false);
+	    	return ListHelper.updateList(EDIT_PERMISSION, pm, emails, append);
     	} finally {
     		pm.close();
     	}
@@ -558,7 +558,7 @@ public class Housing {
     	try {
 	    	this.authorize(user, pm, ADMIN_PERMISSION);
 	    	append = (append == null)?Boolean.FALSE:append;
-	    	return ListHelper.updateList(ADMIN_PERMISSION, pm, emails, false);
+	    	return ListHelper.updateList(ADMIN_PERMISSION, pm, emails, append);
     	} finally {
     		pm.close();
     	}
