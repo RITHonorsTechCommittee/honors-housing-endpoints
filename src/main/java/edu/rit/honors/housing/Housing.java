@@ -57,7 +57,7 @@ public class Housing {
 
 	// Provide default administrators when none are set.
 	// This array must be alphabetically sorted to function properly
-	private static final String[] DEFAULT_ADMINS = { "gjd6793@g.rit.edu", "rdp2575@g.rit.edu" };
+	private static final String[] DEFAULT_ADMINS = { "gjd6793@g.rit.edu", "dwg7486@g.rit.edu" };
 
     /**
      * Get a list of the available rooms, organized into floors.
